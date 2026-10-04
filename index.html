@@ -204,6 +204,10 @@ tr.is-past{opacity:.55}
 .wanted li b{font-family:var(--f-display);font-weight:500}
 .empty-state{background:var(--surface);border:1px dashed var(--line);border-radius:20px;padding:28px;text-align:center;color:var(--muted)}
 
+.foot{border-top:1px solid var(--line);padding-block:18px 32px;color:var(--muted);font-size:var(--fs-s)}
+.foot a{color:inherit;text-underline-offset:3px}
+.foot a:hover{color:var(--ink)}
+
 /* dialog */
 dialog{border:0;border-radius:24px;padding:0;width:min(440px,calc(100vw - 32px));background:var(--surface);color:var(--ink);box-shadow:0 24px 60px rgb(18 32 41 / .28)}
 dialog::backdrop{background:rgb(18 32 41 / .45)}
@@ -283,6 +287,8 @@ dialog .lockart{width:44px;height:44px;fill:none;stroke:var(--s-spring);stroke-w
   <div class="view" id="view-table" hidden></div>
   <div class="view" id="view-people" hidden></div>
 </main>
+
+<footer class="wrap foot"><p>רק רוצים לדעת מה מתוכנן? <a href="https://vaad-hofit.github.io/activities/">ללוח הפעילויות</a></p></footer>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
   <form id="dlgForm" novalidate></form>
