@@ -140,6 +140,12 @@ main{padding-block:18px 64px}
 .card .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card.is-past{opacity:.6}
 .card.is-past header{filter:saturate(.3)}
+.months button[aria-pressed="true"]{background:var(--surface);box-shadow:inset 0 -3px 0 var(--s)}
+.card,.hero{transition:transform .2s ease,box-shadow .25s ease,opacity .25s ease,filter .25s ease}
+.grid.has-focus .card:not(.is-focus){opacity:.38;filter:saturate(.35)}
+.grid.has-focus .card:not(.is-focus):hover{opacity:.8}
+.card.is-focus,.hero.is-focus{box-shadow:0 0 0 3px var(--s),0 14px 30px -16px var(--s)}
+.card.is-focus{transform:translateY(-3px)}
 .escort{font-size:var(--fs-xs);color:var(--vaad);display:flex;gap:6px;align-items:center}
 .escort::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--vaad);flex:none}
 .escort b{color:var(--vaad);font-weight:700}
@@ -268,6 +274,7 @@ dialog .lockart{width:44px;height:44px;fill:none;stroke:var(--s-spring);stroke-w
       <button type="button" data-view="people" aria-pressed="false">המתנדבים שלנו</button>
     </div>
     <div class="months" id="monthStrip"></div>
+    <button type="button" class="linkbtn" id="clearFocus" hidden>הצגת כל החודשים</button>
   </div>
 </nav>
 
@@ -293,6 +300,16 @@ let DATA = {today:'', events:[], signups:[]};
 let lastJson = '';
 let view = 'cards';
 let popName = null;
+let focusMonth = null;
+
+// A month picked in the strip: its cards get a season-colored frame, the rest fade back.
+function applyFocus(){
+  const on = focusMonth !== null;
+  document.querySelectorAll('.card, #hero').forEach(el => el.classList.toggle('is-focus', on && +el.dataset.month === focusMonth));
+  document.querySelectorAll('.grid').forEach(g => g.classList.toggle('has-focus', on));
+  document.querySelectorAll('#monthStrip [data-month]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.month === focusMonth)));
+  document.getElementById('clearFocus').hidden = !on || view !== 'cards';
+}
 
 const SEASON = m => !m ? 'none' : [9,10,11].includes(m) ? 'autumn' : [12,1,2].includes(m) ? 'winter' : [3,4,5].includes(m) ? 'spring' : 'summer';
 const vars = ev => `--tint:var(--t-${SEASON(ev.month)});--s:var(--s-${SEASON(ev.month)})`;
@@ -351,7 +368,7 @@ function actionsHtml(ev){
 const CHIP = {full:'מלא, תודה!', tbd:'בקרוב', past:'התקיים'};
 function cardHtml(ev){
   const st = statusOf(ev);
-  return `<article class="card is-${st}" style="${vars(ev)}" id="ev-${esc(ev.id)}">
+  return `<article class="card is-${st}" data-month="${ev.month || ''}" style="${vars(ev)}" id="ev-${esc(ev.id)}">
     <header>${CHIP[st] ? `<span class="chip">${CHIP[st]}</span>` : ''}<p class="when">${esc(whenLabel(ev))}</p><h3>${esc(ev.title)}</h3></header>
     <div class="body">
       ${descHtml(ev, 'desc')}
@@ -371,6 +388,7 @@ function renderHero(upcoming){
     return;
   }
   hero.setAttribute('style', vars(upcoming));
+  hero.dataset.month = upcoming.month || '';
   hero.innerHTML = `<div>
       <p class="kicker">האירוע הקרוב</p>
       <h2 id="heroTitle">${esc(upcoming.title)}</h2>
@@ -456,6 +474,7 @@ function renderStrip(){
     return `<button type="button" data-month="${m}" ${all.length ? '' : 'disabled'} style="--s:var(--s-${SEASON(m)})" aria-label="${MONTHS[m-1]}: ${all.length} אירועים">
       <span>${MONTHS[m-1]}</span><span class="dots">${all.map(() => '<i></i>').join('')}</span></button>`;
   }).join('');
+  applyFocus();
 }
 
 function render(){
@@ -508,6 +527,7 @@ function setView(v, scroll){
   document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
   ['cards','table','people'].forEach(k => { document.getElementById('view-' + k).hidden = k !== v; });
   document.getElementById('monthStrip').hidden = v !== 'cards';
+  applyFocus();
   if (scroll) document.querySelector('.toolbar').scrollIntoView({block:'start'});
 }
 
@@ -522,10 +542,16 @@ document.addEventListener('click', e => {
 document.getElementById('monthStrip').addEventListener('click', e => {
   const b = e.target.closest('button[data-month]');
   if (!b) return;
+  const m = +b.dataset.month;
+  focusMonth = focusMonth === m ? null : m;
+  applyFocus();
+  if (focusMonth === null) return;
   const first = DATA.events.find(ev => ev.month === +b.dataset.month);
   const target = (first && document.getElementById('ev-' + first.id)) || document.getElementById('hero');
   target.scrollIntoView({block:'start'});
 });
+
+document.getElementById('clearFocus').addEventListener('click', () => { focusMonth = null; applyFocus(); });
 
 /* ---------- dialog ---------- */
 
