@@ -365,7 +365,7 @@ function actionsHtml(ev){
   return `<div class="actions">${join}${manage}</div>`;
 }
 
-const CHIP = {full:'מלא, תודה!', tbd:'בקרוב', past:'התקיים'};
+const CHIP = {full:'מלא, תודה!', tbd:'ההרשמה תיפתח בהמשך', past:'התקיים'};
 function cardHtml(ev){
   const st = statusOf(ev);
   return `<article class="card is-${st}" data-month="${ev.month || ''}" style="${vars(ev)}" id="ev-${esc(ev.id)}">
