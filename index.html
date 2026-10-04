@@ -142,9 +142,9 @@ main{padding-block:18px 64px}
 .card.is-past header{filter:saturate(.3)}
 .months button[aria-pressed="true"]{background:var(--surface);box-shadow:inset 0 -3px 0 var(--s)}
 .card,.hero{transition:transform .2s ease,box-shadow .25s ease,opacity .25s ease,filter .25s ease}
-.grid.has-focus .card:not(.is-focus){opacity:.38;filter:saturate(.35)}
+.grid.has-focus .card:not(.is-focus){opacity:.3;filter:saturate(.3)}
 .grid.has-focus .card:not(.is-focus):hover{opacity:.8}
-.card.is-focus,.hero.is-focus{box-shadow:0 0 0 3px var(--s),0 14px 30px -16px var(--s)}
+.card.is-focus,.hero.is-focus{box-shadow:0 0 0 4px var(--s),0 18px 36px -14px var(--s)}
 .card.is-focus{transform:translateY(-3px)}
 .escort{font-size:var(--fs-xs);color:var(--vaad);display:flex;gap:6px;align-items:center}
 .escort::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--vaad);flex:none}
@@ -157,10 +157,8 @@ main{padding-block:18px 64px}
 .vol{display:grid;gap:4px}
 .shellrow{display:flex;flex-wrap:wrap;gap:3px;align-items:center;list-style:none;margin:0;padding:0}
 .shell svg{width:24px;height:24px;display:block}
-.shell svg .fan{fill:var(--s);stroke:var(--s)}
-.shell svg .rib{stroke:var(--surface)}
-.shell.empty svg .fan{fill:none;stroke:var(--s);stroke-dasharray:2.2 2}
-.shell.empty svg .rib{stroke:none}
+.shell svg{fill:var(--s);stroke:var(--s)} /* inherited into the <use> copy */
+.shell.empty svg{fill:none;stroke-dasharray:2.2 2}
 .shell.empty svg{animation:breathe 2.8s ease-in-out infinite}
 .shell.pop svg{animation:pop .55s ease-out}
 .names{font-size:var(--fs-xs);color:var(--muted)}
@@ -548,7 +546,10 @@ document.getElementById('monthStrip').addEventListener('click', e => {
   if (focusMonth === null) return;
   const first = DATA.events.find(ev => ev.month === +b.dataset.month);
   const target = (first && document.getElementById('ev-' + first.id)) || document.getElementById('hero');
-  target.scrollIntoView({block:'start'});
+  // Land below the sticky toolbar so the picked card is fully visible.
+  const bar = document.querySelector('.toolbar').getBoundingClientRect().height;
+  const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({top: target.getBoundingClientRect().top + window.scrollY - bar - 16, behavior: smooth ? 'smooth' : 'auto'});
 });
 
 document.getElementById('clearFocus').addEventListener('click', () => { focusMonth = null; applyFocus(); });
