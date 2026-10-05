@@ -501,6 +501,13 @@ function applyData(data){
   lastJson = json;
   DATA = data;
   render();
+  try { localStorage.setItem(CACHE_KEY, json); } catch (e) { /* private mode: fine */ }
+}
+
+// The last board this browser saw, shown at once while the server wakes up.
+const CACHE_KEY = 'hofit-board-data';
+function cachedData(){
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch (e) { return null; }
 }
 
 /* ---------- server calls ---------- */
@@ -595,6 +602,7 @@ function openJoin(ev){
     <div class="dlg-actions"><button class="btn" type="submit">הרשמה להתנדבות</button><button class="btn ghost" type="button" data-close>ביטול</button></div>`;
   dlg.showModal();
   form.querySelector('#fName').focus();
+  refresh(); // wakes the server while the form is filled in, so the signup itself answers faster
 }
 
 function openManage(ev){
@@ -608,6 +616,7 @@ function openManage(ev){
     <div class="dlg-actions"><button class="btn" type="submit">מציאת ההרשמה</button><button class="btn ghost" type="button" data-close>סגירה</button></div>`;
   dlg.showModal();
   form.querySelector('#fPhone').focus();
+  refresh();
 }
 
 function openEdit(ev, phone, name){
@@ -627,8 +636,11 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
 }
 
-function busy(on){
+// While waiting for the server, the pressed button says what is happening.
+function busy(on, label, btn = form.querySelector('[type=submit]')){
   form.querySelectorAll('button').forEach(b => { b.disabled = on; });
+  if (on && btn){ btn.dataset.idle = btn.textContent; btn.textContent = label; }
+  if (!on) form.querySelectorAll('[data-idle]').forEach(b => { b.textContent = b.dataset.idle; delete b.dataset.idle; });
 }
 
 // Shared handling of a server answer: locked opens the two-weeks message, other failures show inline.
@@ -650,7 +662,7 @@ form.addEventListener('click', e => {
       return;
     }
     const {ev, phone} = dlgState;
-    busy(true);
+    busy(true, 'מבטלים את ההרשמה…', e.target);
     call('cancelSignup', ev.id, phone).then(res => handle(res, r => {
       dlg.close(); applyData(r.data);
       toast(`ההרשמה ל${ev.title} בוטלה`);
@@ -668,7 +680,7 @@ form.addEventListener('submit', e => {
     const name = form.querySelector('#fName').value.trim();
     const phone = form.querySelector('#fPhone').value;
     if (name.split(/\s+/).length < 2){ err.textContent = 'כתבו שם פרטי ושם משפחה.'; return; }
-    busy(true);
+    busy(true, 'שומרים את ההרשמה…');
     call('signUp', ev.id, name, phone).then(res => handle(res, r => {
       popName = name.replace(/\s+/g,' ');
       dlg.close(); lastJson = ''; applyData(r.data);
@@ -676,12 +688,12 @@ form.addEventListener('submit', e => {
     })).catch(netError);
   } else if (mode === 'find'){
     const phone = form.querySelector('#fPhone').value;
-    busy(true);
+    busy(true, 'מחפשים…');
     call('findSignup', ev.id, phone).then(res => handle(res, r => openEdit(ev, phone, r.name))).catch(netError);
   } else if (mode === 'edit'){
     const name = form.querySelector('#fName').value.trim();
     if (name.split(/\s+/).length < 2){ err.textContent = 'כתבו שם פרטי ושם משפחה.'; return; }
-    busy(true);
+    busy(true, 'שומרים…');
     call('updateSignup', ev.id, dlgState.phone, name).then(res => handle(res, r => {
       dlg.close(); applyData(r.data);
       toast('השינוי נשמר');
@@ -699,7 +711,10 @@ document.addEventListener('click', e => {
 
 /* ---------- start ---------- */
 
+const saved = cachedData();
+if (saved) applyData(saved);
 call('getData').then(applyData).catch(() => {
+  if (saved) return; // the saved board stays up; the next refresh will try again
   document.getElementById('heroTitle').textContent = 'לא הצלחנו לטעון את הלוח. רעננו את הדף כדי לנסות שוב.';
 });
 setInterval(refresh, REFRESH_MS);
