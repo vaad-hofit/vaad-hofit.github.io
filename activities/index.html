@@ -312,18 +312,24 @@ function load(){
   if (document.visibilityState !== 'visible') return;
   fetch(API_URL + '?action=getData&t=' + Date.now(), {credentials:'omit'})
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(data => {
-      const json = JSON.stringify(data);
-      if (json === lastJson) return;
-      lastJson = json;
-      render(data);
-    })
+    .then(show)
     .catch(() => {
       if (lastJson) return; // keep showing what we have
       document.getElementById('timeline').innerHTML = `<p class="state">לא הצלחנו לטעון את הפעילויות. בדקו את החיבור לאינטרנט ורעננו את הדף.</p>`;
     });
 }
 
+function show(data){
+  const json = JSON.stringify(data);
+  if (json === lastJson) return;
+  lastJson = json;
+  render(data);
+  try { localStorage.setItem(CACHE_KEY, json); } catch (e) { /* private mode: fine */ }
+}
+
+// Shared with the volunteer board (same site): the last data either page saw, shown at once while the server wakes up.
+const CACHE_KEY = 'hofit-board-data';
+try { const saved = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (saved) show(saved); } catch (e) { /* no saved copy */ }
 load();
 setInterval(load, 60000);
 document.addEventListener('visibilitychange', load);
